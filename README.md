@@ -2,6 +2,8 @@
 
 **Work in progress.** A browser editor for CS2 crosshairs, with an English interface inspired by the game's settings.
 
+[Open the app](https://spiral-network.github.io/cs2-crosshair-lab/)
+
 - Ten styles, crosshair/outline RGBA and scope dot settings.
 - Resolution presets and custom game/monitor sizes, stretched, black bars or native aspect ratio.
 - Shared game-pixel raster for the preview and ×8 zoom, with a center guide and pixel grid.

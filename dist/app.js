@@ -51,7 +51,7 @@ function render(time=performance.now()){
  if(animating){const phase=(time%2400)/2400,mm=$('motion-mode').value;motion=mm==='move'?.22+.18*Math.sin(time/500):mm==='fire'?Math.max(0,1-(time%650)/450):Math.max(.25*Math.sin(phase*Math.PI*2)+.25,Math.max(0,1-(time%900)/420));}
  if(sinceShot<.55)motion=Math.max(motion,1-sinceShot/.55);
  const recoil=state.recoil?motion*10*game[1]/state.reference:0;
- const zoom=$('zoom'),zc=zoom.getContext('2d');zc.fillStyle=$('background').value==='light'?'#d1d0c6':'#253038';zc.fillRect(0,0,160,120);zc.imageSmoothingEnabled=false;
+ const zoom=$('zoom'),zc=zoom.getContext('2d');zc.fillStyle=$('background').value==='light'?'#d1d0c6':'#262e33';zc.fillRect(0,0,160,120);zc.imageSmoothingEnabled=false;
  const stretch=mode==='stretch'?ratio/(game[0]/game[1]):1,zsx=8*stretch,zsy=8;
  const im=images[$('background').value];if(im?.complete&&im.naturalWidth){const crop=Math.min(im.width,im.height*game[0]/game[1]),zw=160/zsx/game[0]*crop,zh=120/zsy/game[1]*im.height;zc.drawImage(im,im.width/2-zw/2,im.height/2-zh/2,zw,zh,0,0,160,120);}
  // Tile at the selected game resolution, then use identical pixels in both views.
@@ -73,6 +73,9 @@ function render(time=performance.now()){
  if($('scope-preview')){const sc=$('scope-preview').getContext('2d');sc.fillStyle='#202a2e';sc.fillRect(0,0,160,44);sc.strokeStyle='#8ba0aa33';sc.lineWidth=1;sc.beginPath();sc.moveTo(60,22);sc.lineTo(100,22);sc.moveTo(80,6);sc.lineTo(80,38);sc.stroke();sc.fillStyle=state.scopeColor?`rgba(${state.r},${state.g},${state.b},${state.a/255})`:'#ff3838';sc.beginPath();sc.arc(80,22,state.scopeScale*3*game[1]/960,0,Math.PI*2);sc.fill();}
  $('preview-label').textContent=`${game[0]} × ${game[1]} · ${mode==='stretch'?'STRETCHED':mode==='bars'?'BLACK BARS':'NATIVE'}${animating?' · SIMULATION':''}`;
  $('render-info').textContent=`Aim center (${game[0]/2}, ${game[1]/2}) · ref. ${state.reference}p · ${Math.max(1,Math.round(state.thickness*game[1]/state.reference))} px thick`;
+ const thickness=Math.max(1,Math.round(state.thickness*game[1]/state.reference)),phase=thickness%2/2,dx=pixels.anchor[0]+phase-game[0]/2,dy=Math.floor(game[1]/2)+phase-game[1]/2;
+ $('alignment-info').hidden=![0,2,4,5,6].includes(state.style)||(dx===0&&dy===0);
+ $('alignment-info').textContent=`Raster ${state.style===6?'dot center':'bar axes'} offset: X ${dx>=0?'+':''}${dx}, Y ${dy>=0?'+':''}${dy} game pixels from the aim center. Native CS2 pixel alignment is not yet verified.`;
 }
 $('animate').addEventListener('click',()=>{animating=!animating;$('animate').textContent=animating?'Ⅱ Stop dynamic preview':'▶ Play dynamic preview';$('simulation').hidden=!animating;render();});$('fire').addEventListener('click',()=>{shotAt=performance.now();render();});
 function frame(t){if(animating||t-shotAt<600)render(t);requestAnimationFrame(frame);}requestAnimationFrame(frame);
@@ -102,7 +105,7 @@ function makePlan(){
  const range={length:valuesRange('length'),thickness:valuesRange('thickness'),gap:valuesRange('gap')},family=$('catalogue-family').value;
  const list=family==='all'?C.styles.map((s,i)=>i):[Number(family)];let offset=0;
  plan=list.map(style=>{
-  const axes=[['length',[0,2,4,5,7].includes(style)?range.length:{min:state.length,count:1}],['thickness',range.thickness],['gap',style===6?{min:state.gap,count:1}:range.gap],['dot',{values:style===6?[0]:optionsFor('dot')}],['t',{values:[0,2,4,5,7].includes(style)?optionsFor('t'):[0]}]];
+  const axes=[['length',[0,2,4,5,7].includes(style)?range.length:{min:state.length,count:1}],['thickness',range.thickness],['gap',[1,6].includes(style)?{min:state.gap,count:1}:range.gap],['dot',{values:style===6?[0]:optionsFor('dot')}],['t',{values:[0,2,4,5,7].includes(style)?optionsFor('t'):[0]}]];
   for(const [,a] of axes)if(a.values)a.count=a.values.length;
   const count=axes.reduce((n,[,a])=>n*a.count,1),p={style,axes,count,offset};offset+=count;return p;
  });total=offset;
@@ -121,7 +124,7 @@ function showCatalogue(){
   C.styles.forEach((name,style)=>{const s={...state,style,length:style===state.style?state.length:8,gap:style===state.style?state.gap:5};$('catalogue-grid').append(catalogueCard(s,name,familyNotes[style]));});
  }else{
   try{makePlan();page=Math.min(page,Math.max(0,Math.ceil(total/PAGE_SIZE)-1));$('catalogue-info').textContent=`${total.toLocaleString('en-US')} combinations within your ranges · current color, outline and dynamic settings · thumbnails ×3.`;
-   for(let i=page*PAGE_SIZE;i<Math.min(total,(page+1)*PAGE_SIZE);i++){const s=variantAt(i);$('catalogue-grid').append(catalogueCard(s,C.styles[s.style],`L ${s.length} · E ${s.thickness} · gap ${s.gap}${s.dot?' · dot':''}${s.t?' · T':''}`));}
+   for(let i=page*PAGE_SIZE;i<Math.min(total,(page+1)*PAGE_SIZE);i++){const s=variantAt(i);$('catalogue-grid').append(catalogueCard(s,C.styles[s.style],`Length ${s.length} · thickness ${s.thickness} · gap ${s.gap}${s.dot?' · dot':''}${s.t?' · T':''}`));}
    $('page-info').textContent=`Page ${(page+1).toLocaleString('en-US')} / ${Math.ceil(total/PAGE_SIZE).toLocaleString('en-US')}`;$('page-prev').disabled=page===0;$('page-next').disabled=(page+1)*PAGE_SIZE>=total;
   }catch(e){$('catalogue-info').textContent=e.message;$('page-prev').disabled=true;$('page-next').disabled=true;}
  }
